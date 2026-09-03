@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item *)",
+      "Bash(dotnet --version)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\fabio\\\\OneDrive\\\\Documentos\\\\GitHub\\\\QuickStartup\" -Recurse -File | Select-Object @{N='Path';E={$_.FullName.Replace\\('C:\\\\Users\\\\fabio\\\\OneDrive\\\\Documentos\\\\GitHub\\\\QuickStartup\\\\',''\\)}} | Format-Table -AutoSize)"
+    ]
+  }
+}

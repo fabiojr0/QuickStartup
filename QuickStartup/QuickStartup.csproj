@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>QuickStartup</AssemblyName>
+    <RootNamespace>QuickStartup</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <!-- RuntimeIdentifier para publish self-contained; build normal funciona sem isso -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Hardcodet NotifyIcon for WPF system tray -->
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" Condition="Exists('Assets\app.ico')" />
+  </ItemGroup>
+
+</Project>

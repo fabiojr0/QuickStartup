@@ -1,0 +1,212 @@
+<Window x:Class="QuickStartup.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Configurações" Height="360" Width="480"
+        ResizeMode="NoResize"
+        Background="#202020" Foreground="#F3F3F3"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <!-- Paleta inspirada no Fluent/Windows 11 (tema escuro da Microsoft Store) -->
+        <SolidColorBrush x:Key="Surface"     Color="#2C2C2E"/>
+        <SolidColorBrush x:Key="Overlay"     Color="#3A3A3C"/>
+        <SolidColorBrush x:Key="SurfaceHigh" Color="#454547"/>
+        <SolidColorBrush x:Key="Accent"      Color="#60CDFF"/>
+        <SolidColorBrush x:Key="AccentHover" Color="#89DAFF"/>
+        <SolidColorBrush x:Key="Text"        Color="#F3F3F3"/>
+        <SolidColorBrush x:Key="Subtext"     Color="#A6A6A6"/>
+
+        <DropShadowEffect x:Key="CardShadow" Color="Black" Opacity="0.35" BlurRadius="14" ShadowDepth="2" Direction="270"/>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource Subtext}"/>
+            <Setter Property="Margin"     Value="0,10,0,4"/>
+        </Style>
+
+        <Style x:Key="FieldCombo" TargetType="ComboBox">
+            <Setter Property="Background"      Value="{StaticResource Overlay}"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource SurfaceHigh}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="8,5"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <!-- Template completo: o popup padrão do ComboBox ignora as cores do app
+                 e usa o tema claro do Windows, ficando ilegível sobre o fundo escuro. -->
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Padding"    Value="8,6"/>
+                        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ComboBoxItem">
+                                    <Border x:Name="Bd" Background="Transparent" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsHighlighted" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Surface}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#2660CDFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="Bd"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6"/>
+                            <ToggleButton x:Name="ToggleButton" Focusable="False" ClickMode="Press"
+                                          Background="Transparent" BorderThickness="0"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Grid Background="Transparent">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="1" Text="▾" FontSize="10"
+                                                       Foreground="{StaticResource Subtext}"
+                                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <Popup x:Name="Popup" Placement="Bottom" AllowsTransparency="True"
+                                   Focusable="False" PopupAnimation="Slide"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}">
+                                <Border Background="{StaticResource Overlay}" BorderBrush="{StaticResource SurfaceHigh}"
+                                        BorderThickness="1" CornerRadius="6" Margin="0,2,0,0"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        MaxHeight="240">
+                                    <ScrollViewer Margin="2" SnapsToDevicePixels="True">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BtnPrimary" TargetType="Button">
+            <Setter Property="Background"  Value="{StaticResource Accent}"/>
+            <Setter Property="Foreground"  Value="#0D1F2D"/>
+            <Setter Property="FontWeight"  Value="SemiBold"/>
+            <Setter Property="Padding"     Value="16,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor"      Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BtnSecondary" TargetType="Button" BasedOn="{StaticResource BtnPrimary}">
+            <Setter Property="Background"  Value="{StaticResource Overlay}"/>
+            <Setter Property="Foreground"  Value="{StaticResource Text}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Título -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,18">
+            <Border Width="28" Height="28" CornerRadius="7" Background="{StaticResource Accent}"
+                    VerticalAlignment="Center">
+                <TextBlock Text="⚙" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="#0D1F2D"/>
+            </Border>
+            <TextBlock Text="Configurações" FontSize="18" FontWeight="SemiBold"
+                       Foreground="{StaticResource Text}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Conteúdo -->
+        <StackPanel Grid.Row="1">
+
+            <!-- Iniciar com Windows -->
+            <Border Background="{StaticResource Surface}" CornerRadius="10" Padding="14"
+                    Effect="{StaticResource CardShadow}">
+                <StackPanel>
+                    <CheckBox IsChecked="{Binding StartWithWindows}"
+                              Foreground="{StaticResource Text}" FontSize="14">
+                        <TextBlock Text="Iniciar com o Windows"/>
+                    </CheckBox>
+                    <TextBlock Text="O app iniciará em segundo plano, direto na bandeja do sistema."
+                               FontSize="11" Foreground="{StaticResource Subtext}"
+                               TextWrapping="Wrap"
+                               Margin="22,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Perfil padrão -->
+            <TextBlock Text="Perfil padrão (executado ao iniciar com o Windows)"
+                       Style="{StaticResource FieldLabel}"/>
+            <ComboBox ItemsSource="{Binding Profiles}"
+                      SelectedItem="{Binding DefaultProfile}"
+                      DisplayMemberPath="Name"
+                      Style="{StaticResource FieldCombo}"/>
+
+            <TextBlock Margin="0,6,0,0" FontSize="11" Foreground="{StaticResource Subtext}"
+                       TextWrapping="Wrap"
+                       Text="Deixe em branco para não executar nenhum perfil automaticamente."/>
+
+        </StackPanel>
+
+        <!-- Botões -->
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="1" Content="Cancelar"
+                    Style="{StaticResource BtnSecondary}" Margin="0,0,8,0"
+                    Click="Cancel_Click"/>
+            <Button Grid.Column="2" Content="Salvar"
+                    Style="{StaticResource BtnPrimary}"
+                    Command="{Binding SaveCommand}"/>
+        </Grid>
+    </Grid>
+</Window>
