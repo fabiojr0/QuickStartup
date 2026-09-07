@@ -63,9 +63,9 @@ Name: "desktopicon"; Description: "Criar atalho na Área de Trabalho"; GroupDesc
 
 [Registry]
 ; Registra no Windows para iniciar automaticamente (só se o usuário marcou a opção)
-Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-  ValueType: string; ValueName: "QuickStartup";
-  ValueData: """{app}\{#AppExeName}"" --startup";
+Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; \
+  ValueType: string; ValueName: "QuickStartup"; \
+  ValueData: """{app}\{#AppExeName}"" --startup"; \
   Flags: uninsdeletevalue; Tasks: startupregistry
 
 [Run]
