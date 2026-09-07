@@ -13,6 +13,7 @@
     <Window.Resources>
         <helpers:BoolToDefaultTextConverter x:Key="BoolToDefaultText"/>
         <helpers:InitialLetterConverter x:Key="InitialLetter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 
         <!-- Paleta inspirada no Fluent/Windows 11 (tema escuro da Microsoft Store) -->
         <SolidColorBrush x:Key="PageBg"      Color="#202020"/>
@@ -148,6 +149,96 @@
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Padding"      Value="7,2"/>
         </Style>
+
+        <!-- Menu da bandeja (clique direito no ícone em segundo plano): fundo cinza e cantos arredondados -->
+        <SolidColorBrush x:Key="TrayMenuBg"    Color="#3B3B3B"/>
+        <SolidColorBrush x:Key="TrayMenuHover" Color="#4A4A4A"/>
+
+        <Style x:Key="TrayContextMenuStyle" TargetType="ContextMenu">
+            <Setter Property="Background"     Value="{StaticResource TrayMenuBg}"/>
+            <Setter Property="Foreground"     Value="{StaticResource Text}"/>
+            <Setter Property="BorderBrush"    Value="{StaticResource Stroke}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"        Value="5"/>
+            <Setter Property="FontSize"       Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Border.Effect>
+                                <DropShadowEffect Color="Black" Opacity="0.4" BlurRadius="16" ShadowDepth="2" Direction="270"/>
+                            </Border.Effect>
+                            <StackPanel IsItemsHost="True"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Itens do menu da bandeja, incluindo o submenu "Executar Perfil" -->
+        <Style x:Key="TrayMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background"  Value="Transparent"/>
+            <Setter Property="Foreground"  Value="{StaticResource Text}"/>
+            <Setter Property="Padding"     Value="10,7"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter Grid.Column="0" ContentSource="Header"
+                                                   RecognizesAccessKey="True" VerticalAlignment="Center"/>
+
+                                <Path x:Name="Arrow" Grid.Column="1" Visibility="Collapsed"
+                                      Data="M0,0 L4,4 L0,8" Stroke="{StaticResource Subtext}"
+                                      StrokeThickness="1.4" Margin="14,0,0,0" VerticalAlignment="Center"/>
+
+                                <Popup x:Name="Submenu" Placement="Right" AllowsTransparency="True"
+                                       Focusable="False" PopupAnimation="Fade"
+                                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <Border Background="{StaticResource TrayMenuBg}"
+                                            BorderBrush="{StaticResource Stroke}" BorderThickness="1"
+                                            CornerRadius="10" Padding="5" SnapsToDevicePixels="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="Black" Opacity="0.4" BlurRadius="16" ShadowDepth="2" Direction="270"/>
+                                        </Border.Effect>
+                                        <StackPanel IsItemsHost="True"/>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource TrayMenuHover}"/>
+                            </Trigger>
+                            <Trigger Property="Role" Value="SubmenuHeader">
+                                <Setter TargetName="Arrow" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TraySeparatorStyle" TargetType="Separator">
+            <Setter Property="Background" Value="{StaticResource Stroke}"/>
+            <Setter Property="Height"     Value="1"/>
+            <Setter Property="Margin"     Value="4,5"/>
+        </Style>
     </Window.Resources>
 
     <!-- Ícone da bandeja do sistema — colocado fora do layout visual -->
@@ -156,6 +247,8 @@
             <RowDefinition Height="0"/>
             <!-- linha fantasma para o TaskbarIcon -->
             <RowDefinition Height="56"/>
+            <RowDefinition Height="Auto"/>
+            <!-- aviso de atualização disponível -->
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -167,12 +260,15 @@
                         ToolTipText="QuickStartup"
                         TrayMouseDoubleClick="TrayIcon_TrayMouseDoubleClick">
             <tb:TaskbarIcon.ContextMenu>
-                <ContextMenu Opened="TrayContextMenu_Opened">
-                    <MenuItem Header="Abrir QuickStartup" Click="TrayOpen_Click" FontWeight="Bold"/>
-                    <Separator/>
-                    <MenuItem x:Name="TrayProfilesMenuItem" Header="Executar Perfil"/>
-                    <Separator/>
-                    <MenuItem Header="Sair" Click="TrayExit_Click"/>
+                <ContextMenu Opened="TrayContextMenu_Opened" Style="{StaticResource TrayContextMenuStyle}">
+                    <MenuItem Header="Abrir QuickStartup" Click="TrayOpen_Click" FontWeight="Bold"
+                              Style="{StaticResource TrayMenuItemStyle}"/>
+                    <Separator Style="{StaticResource TraySeparatorStyle}"/>
+                    <MenuItem x:Name="TrayProfilesMenuItem" Header="Executar Perfil"
+                              Style="{StaticResource TrayMenuItemStyle}"/>
+                    <Separator Style="{StaticResource TraySeparatorStyle}"/>
+                    <MenuItem Header="Sair" Click="TrayExit_Click"
+                              Style="{StaticResource TrayMenuItemStyle}"/>
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
@@ -201,8 +297,34 @@
             </Grid>
         </Border>
 
+        <!-- Aviso de nova versão disponível (checagem via GitHub Releases) -->
+        <Border Grid.Row="2" Background="{StaticResource SurfaceHigh}" CornerRadius="8"
+                Margin="20,0,20,12" Padding="14,10"
+                Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibility}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="12.5">
+                    <Run Text="🔔 Nova versão disponível: "/>
+                    <Run Text="{Binding UpdateVersionText, Mode=OneWay}" FontWeight="SemiBold"/>
+                </TextBlock>
+
+                <Button Grid.Column="1" Content="Baixar" Style="{StaticResource BtnPrimary}"
+                        Padding="14,7" Margin="10,0,6,0"
+                        Command="{Binding OpenUpdateCommand}"/>
+
+                <Button Grid.Column="2" Content="✕" Style="{StaticResource BtnIcon}"
+                        Width="28" Height="28" FontSize="11"
+                        Command="{Binding DismissUpdateCommand}" ToolTip="Dispensar"/>
+            </Grid>
+        </Border>
+
         <!-- Conteúdo principal -->
-        <Grid Grid.Row="2" Margin="20,4,20,20">
+        <Grid Grid.Row="3" Margin="20,4,20,20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="270" MinWidth="200"/>
                 <ColumnDefinition Width="16"/>
@@ -391,7 +513,7 @@
         </Grid>
 
         <!-- Status bar -->
-        <Border Grid.Row="3" Background="{StaticResource Surface}" Padding="20,8">
+        <Border Grid.Row="4" Background="{StaticResource Surface}" Padding="20,8">
             <TextBlock Text="{Binding StatusText}" FontSize="12"
                        Foreground="{StaticResource Subtext}"/>
         </Border>

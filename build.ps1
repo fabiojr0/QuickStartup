@@ -9,6 +9,12 @@ $ErrorActionPreference = "Stop"
 $root    = $PSScriptRoot
 $project = Join-Path $root "QuickStartup\QuickStartup.csproj"
 $publish = Join-Path $root "QuickStartup\bin\Release\net8.0-windows\win-x64\publish"
+$builds  = Join-Path $root "builds"
+
+# Versão lida do <Version> do .csproj — fonte única de verdade. Para lançar uma nova
+# versão, basta atualizar essa tag e rodar o build de novo.
+$version = (Select-Xml -Path $project -XPath "//Version").Node.InnerText
+if (-not $version) { throw "Não foi possível ler <Version> em $project" }
 
 Write-Host "`n=== Gerando ícone placeholder (se não existir) ===" -ForegroundColor Cyan
 $iconPath = Join-Path $root "QuickStartup\Assets\app.ico"
@@ -34,6 +40,12 @@ dotnet publish $project `
 
 Write-Host "`n=== Publicação concluída! ===" -ForegroundColor Green
 Write-Host "Arquivos em: $publish"
+
+Write-Host "`n=== Copiando executável versionado para builds\ ===" -ForegroundColor Cyan
+New-Item -ItemType Directory -Force $builds | Out-Null
+$versionedExe = Join-Path $builds "QuickStartup-v$version.exe"
+Copy-Item (Join-Path $publish "QuickStartup.exe") $versionedExe -Force
+Write-Host "Gerado: $versionedExe"
 
 if (-not $NoInstaller) {
     $innoPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"

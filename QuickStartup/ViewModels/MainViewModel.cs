@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using QuickStartup.Helpers;
 using QuickStartup.Models;
@@ -40,6 +41,25 @@ public class MainViewModel : INotifyPropertyChanged
         private set { _statusText = value; OnPropertyChanged(); }
     }
 
+    private bool _updateAvailable;
+    private string _updateVersionText = "";
+    private string _updateUrl = "";
+
+    public bool UpdateAvailable
+    {
+        get => _updateAvailable;
+        private set { _updateAvailable = value; OnPropertyChanged(); }
+    }
+
+    public string UpdateVersionText
+    {
+        get => _updateVersionText;
+        private set { _updateVersionText = value; OnPropertyChanged(); }
+    }
+
+    public RelayCommand OpenUpdateCommand    { get; }
+    public RelayCommand DismissUpdateCommand { get; }
+
     public RelayCommand ExecuteProfileCommand { get; }
     public RelayCommand NewProfileCommand     { get; }
     public RelayCommand EditProfileCommand    { get; }
@@ -51,6 +71,10 @@ public class MainViewModel : INotifyPropertyChanged
     // Ações que abrem janelas — injetadas pela View para manter a VM testável
     public Action<Profile>? OpenEditorAction   { get; set; }
     public Action? OpenSettingsAction          { get; set; }
+
+    // Confirmação antes de excluir — injetada pela View (MessageBox). Se não for
+    // definida (ex: em testes), a exclusão prossegue sem pedir confirmação.
+    public Func<Profile, bool>? ConfirmDeleteAction { get; set; }
 
     public MainViewModel(ProfileService profileService, WindowService windowService)
     {
@@ -66,6 +90,21 @@ public class MainViewModel : INotifyPropertyChanged
         DeleteProfileCommand    = new(DeleteProfile,    () => SelectedProfile is not null && IsNotRunning);
         CancelCommand           = new(Cancel,           () => IsRunning);
         OpenSettingsCommand     = new(OpenSettings);
+        OpenUpdateCommand       = new(OpenUpdate);
+        DismissUpdateCommand    = new(() => UpdateAvailable = false);
+    }
+
+    public void SetUpdateAvailable(string version, string url)
+    {
+        _updateUrl        = url;
+        UpdateVersionText = version;
+        UpdateAvailable   = true;
+    }
+
+    private void OpenUpdate()
+    {
+        if (string.IsNullOrWhiteSpace(_updateUrl)) return;
+        Process.Start(new ProcessStartInfo(_updateUrl) { UseShellExecute = true });
     }
 
     public async void ExecuteProfile()
@@ -119,6 +158,8 @@ public class MainViewModel : INotifyPropertyChanged
     private void DeleteProfile()
     {
         if (SelectedProfile is null) return;
+        if (ConfirmDeleteAction?.Invoke(SelectedProfile) == false) return;
+
         _profileService.Remove(SelectedProfile);
         SelectedProfile = Profiles.FirstOrDefault();
     }

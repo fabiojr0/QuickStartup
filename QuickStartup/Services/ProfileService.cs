@@ -51,7 +51,17 @@ public class ProfileService
     public void Save()
     {
         var json = JsonSerializer.Serialize(Profiles.ToList(), JsonOptions);
-        File.WriteAllText(ProfilesFile, json);
+
+        // Escreve num arquivo temporário e troca de forma atômica: se o processo for
+        // encerrado no meio da escrita (queda de energia, crash), o profiles.json original
+        // fica intacto em vez de corromper e perder todos os perfis salvos.
+        var tempFile = ProfilesFile + ".tmp";
+        File.WriteAllText(tempFile, json);
+
+        if (File.Exists(ProfilesFile))
+            File.Replace(tempFile, ProfilesFile, null);
+        else
+            File.Move(tempFile, ProfilesFile);
     }
 
     public void Add(Profile profile)
