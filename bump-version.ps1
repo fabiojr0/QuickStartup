@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────
 #  bump-version.ps1  —  Muda a versão do QuickStartup em um lugar só
 #
 #  <Version> em QuickStartup.csproj é a fonte única de verdade: build.ps1 lê
