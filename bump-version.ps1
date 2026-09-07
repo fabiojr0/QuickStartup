@@ -29,7 +29,7 @@ Set-Content $project -Value $content -NoNewline
 Write-Host "`n=== Commitando e criando a tag v$Version ===" -ForegroundColor Cyan
 git -C $root add $project
 git -C $root commit -m "Bump version to $Version"
-git -C $root tag "v$Version"
+git -C $root tag -a "v$Version" -m "Release v$Version"
 
 Write-Host "`n=== Pronto! ===" -ForegroundColor Green
 Write-Host "Commit e tag criados localmente. Revise com 'git show' e, quando quiser"
