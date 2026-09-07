@@ -52,7 +52,7 @@ if (-not $NoInstaller) {
     if (Test-Path $innoPath) {
         Write-Host "`n=== Compilando instalador (Inno Setup) ===" -ForegroundColor Cyan
         New-Item -ItemType Directory -Force "$root\installer\output" | Out-Null
-        & $innoPath "$root\installer\setup.iss"
+        & $innoPath "/DAppVersion=$version" "$root\installer\setup.iss"
         Write-Host "`n=== Instalador gerado em installer\output\ ===" -ForegroundColor Green
     } else {
         Write-Host "`n[AVISO] Inno Setup não encontrado em '$innoPath'." -ForegroundColor Yellow

@@ -43,7 +43,10 @@ public class MainViewModel : INotifyPropertyChanged
 
     private bool _updateAvailable;
     private string _updateVersionText = "";
-    private string _updateUrl = "";
+    private string? _updateInstallerUrl;
+    private string _updateReleaseUrl = "";
+    private string _updateButtonText = "Atualizar";
+    private bool _isUpdating;
 
     public bool UpdateAvailable
     {
@@ -57,8 +60,26 @@ public class MainViewModel : INotifyPropertyChanged
         private set { _updateVersionText = value; OnPropertyChanged(); }
     }
 
+    public string UpdateButtonText
+    {
+        get => _updateButtonText;
+        private set { _updateButtonText = value; OnPropertyChanged(); }
+    }
+
+    public bool IsUpdating
+    {
+        get => _isUpdating;
+        private set { _isUpdating = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsNotUpdating)); }
+    }
+
+    public bool IsNotUpdating => !_isUpdating;
+
     public RelayCommand OpenUpdateCommand    { get; }
     public RelayCommand DismissUpdateCommand { get; }
+
+    // Chamada para encerrar o app de verdade (janela + tray + processo) antes de instalar a
+    // atualização — injetada pela View, já que a VM não deve depender de detalhes da janela.
+    public Action? RequestAppExitAction { get; set; }
 
     public RelayCommand ExecuteProfileCommand { get; }
     public RelayCommand NewProfileCommand     { get; }
@@ -90,21 +111,47 @@ public class MainViewModel : INotifyPropertyChanged
         DeleteProfileCommand    = new(DeleteProfile,    () => SelectedProfile is not null && IsNotRunning);
         CancelCommand           = new(Cancel,           () => IsRunning);
         OpenSettingsCommand     = new(OpenSettings);
-        OpenUpdateCommand       = new(OpenUpdate);
-        DismissUpdateCommand    = new(() => UpdateAvailable = false);
+        OpenUpdateCommand       = new(InstallUpdate, () => IsNotUpdating);
+        DismissUpdateCommand    = new(() => UpdateAvailable = false, () => IsNotUpdating);
     }
 
-    public void SetUpdateAvailable(string version, string url)
+    public void SetUpdateAvailable(string version, string? installerUrl, string releaseUrl)
     {
-        _updateUrl        = url;
-        UpdateVersionText = version;
-        UpdateAvailable   = true;
+        _updateInstallerUrl = installerUrl;
+        _updateReleaseUrl   = releaseUrl;
+        UpdateVersionText   = version;
+        UpdateButtonText    = "Atualizar";
+        UpdateAvailable     = true;
     }
 
-    private void OpenUpdate()
+    private async void InstallUpdate()
     {
-        if (string.IsNullOrWhiteSpace(_updateUrl)) return;
-        Process.Start(new ProcessStartInfo(_updateUrl) { UseShellExecute = true });
+        if (string.IsNullOrWhiteSpace(_updateInstallerUrl))
+        {
+            // Release sem instalador anexado nesse formato — melhor abrir a página do
+            // release manualmente do que rodar um .exe qualquer com flags de instalação silenciosa.
+            Process.Start(new ProcessStartInfo(_updateReleaseUrl) { UseShellExecute = true });
+            return;
+        }
+
+        IsUpdating       = true;
+        UpdateButtonText = "Baixando...";
+
+        var installerPath = await UpdateService.DownloadInstallerAsync(_updateInstallerUrl);
+        if (installerPath is null)
+        {
+            UpdateButtonText = "Falha no download";
+            IsUpdating        = false;
+            return;
+        }
+
+        UpdateButtonText = "Instalando...";
+        UpdateService.RunInstallerSilently(installerPath);
+
+        // O instalador (/VERYSILENT) fecha esta instância via AppMutex e reabre sozinho ao
+        // terminar (ver installer/setup.iss) — encerra aqui também pra não deixar o processo
+        // antigo pendurado enquanto o instalador ainda está de pé.
+        RequestAppExitAction?.Invoke();
     }
 
     public async void ExecuteProfile()

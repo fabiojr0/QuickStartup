@@ -112,7 +112,8 @@ public partial class App : System.Windows.Application
         var update = await UpdateService.CheckForUpdateAsync();
         if (update is null) return;
 
-        mainWindow.Dispatcher.Invoke(() => mainWindow.ShowUpdateAvailable(update.Version, update.DownloadUrl));
+        mainWindow.Dispatcher.Invoke(() =>
+            mainWindow.ShowUpdateAvailable(update.Version, update.InstallerUrl, update.ReleasePageUrl));
     }
 
     /// <summary>Sobe a prioridade do processo para AboveNormal para que a janela e o

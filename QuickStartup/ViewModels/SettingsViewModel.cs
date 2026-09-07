@@ -34,6 +34,9 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     public IEnumerable<Profile> Profiles => _profileService.Profiles;
 
+    // Mesma versão que UpdateService compara contra o GitHub Releases pra checar atualização.
+    public string VersionText => $"Versão {UpdateService.GetCurrentVersion()}";
+
     public RelayCommand SaveCommand  { get; }
     public Action? CloseAction       { get; set; }
 

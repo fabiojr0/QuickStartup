@@ -36,7 +36,8 @@ public partial class MainWindow : Window
                 $"Tem certeza que deseja excluir o perfil \"{profile.Name}\"?",
                 "Excluir perfil",
                 MessageBoxButton.YesNo,
-                MessageBoxImage.Warning) == MessageBoxResult.Yes
+                MessageBoxImage.Warning) == MessageBoxResult.Yes,
+            RequestAppExitAction = ForceClose
         };
 
         DataContext = _vm;
@@ -55,6 +56,9 @@ public partial class MainWindow : Window
         _forceClose = true;
         TrayIcon.Dispose();
         Close();
+        // ShutdownMode="OnExplicitShutdown" (App.xaml) significa que fechar a janela sozinho
+        // não encerra o processo — precisa deste chamado explícito.
+        System.Windows.Application.Current.Shutdown();
     }
 
     private void TrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e) => ShowMainWindow();
@@ -66,8 +70,8 @@ public partial class MainWindow : Window
 
     /// <summary>Chamado pelo App.xaml.cs quando a checagem de atualização (GitHub Releases)
     /// encontra uma versão mais nova — exibe o aviso na janela principal.</summary>
-    public void ShowUpdateAvailable(string version, string downloadUrl) =>
-        _vm.SetUpdateAvailable(version, downloadUrl);
+    public void ShowUpdateAvailable(string version, string? installerUrl, string releaseUrl) =>
+        _vm.SetUpdateAvailable(version, installerUrl, releaseUrl);
 
     // Monta a lista de perfis toda vez que o menu é aberto, para refletir renomeações/
     // criações/exclusões feitas desde a última vez sem precisar observar cada mudança.

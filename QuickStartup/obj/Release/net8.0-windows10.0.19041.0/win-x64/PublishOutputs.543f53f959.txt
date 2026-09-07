@@ -1,0 +1,2 @@
+C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\bin\Release\net8.0-windows\win-x64\publish\QuickStartup.pdb
+C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\bin\Release\net8.0-windows\win-x64\publish\QuickStartup.exe

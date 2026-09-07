@@ -1,0 +1,48 @@
+name: Release
+
+# Dispara ao empurrar uma tag "vX.Y.Z" (criada por bump-version.ps1). Compila o app,
+# gera o instalador e publica um GitHub Release com os dois .exe anexados — é isso que
+# o UpdateService.cs do app consulta para saber se há uma versão mais nova.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Conferir se a tag bate com <Version> do csproj
+        shell: pwsh
+        run: |
+          $tagVersion    = "${{ github.ref_name }}".TrimStart('v')
+          $csprojVersion = (Select-Xml -Path QuickStartup\QuickStartup.csproj -XPath "//Version").Node.InnerText
+          if ($tagVersion -ne $csprojVersion) {
+            throw "Tag '${{ github.ref_name }}' não bate com <Version>$csprojVersion</Version> em QuickStartup.csproj. Use bump-version.ps1 pra manter os dois em sincronia."
+          }
+
+      - name: Build (publish + instalador)
+        shell: pwsh
+        run: .\build.ps1
+
+      - name: Publicar Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            builds/*.exe
+            installer/output/*.exe
+          generate_release_notes: true

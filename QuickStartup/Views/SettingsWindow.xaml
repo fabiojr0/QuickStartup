@@ -201,6 +201,8 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding VersionText}" FontSize="11"
+                       Foreground="{StaticResource Subtext}" VerticalAlignment="Center"/>
             <Button Grid.Column="1" Content="Cancelar"
                     Style="{StaticResource BtnSecondary}" Margin="0,0,8,0"
                     Click="Cancel_Click"/>

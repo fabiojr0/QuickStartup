@@ -29,3 +29,4 @@ C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\ne
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\QuickStartup.pdb
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\QuickStartup.genruntimeconfig.cache
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\ref\QuickStartup.dll
+C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\QuickStartup.sourcelink.json

@@ -313,12 +313,12 @@
                     <Run Text="{Binding UpdateVersionText, Mode=OneWay}" FontWeight="SemiBold"/>
                 </TextBlock>
 
-                <Button Grid.Column="1" Content="Baixar" Style="{StaticResource BtnPrimary}"
-                        Padding="14,7" Margin="10,0,6,0"
+                <Button Grid.Column="1" Content="{Binding UpdateButtonText}" Style="{StaticResource BtnPrimary}"
+                        Padding="14,7" Margin="10,0,6,0" IsEnabled="{Binding IsNotUpdating}"
                         Command="{Binding OpenUpdateCommand}"/>
 
                 <Button Grid.Column="2" Content="✕" Style="{StaticResource BtnIcon}"
-                        Width="28" Height="28" FontSize="11"
+                        Width="28" Height="28" FontSize="11" IsEnabled="{Binding IsNotUpdating}"
                         Command="{Binding DismissUpdateCommand}" ToolTip="Dispensar"/>
             </Grid>
         </Border>
