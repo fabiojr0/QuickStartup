@@ -153,9 +153,10 @@
 
         <!-- Título -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,18">
-            <Border Width="28" Height="28" CornerRadius="7" Background="{StaticResource Accent}"
+            <Border Width="28" Height="28" CornerRadius="9" Background="{StaticResource Accent}"
                     VerticalAlignment="Center">
-                <TextBlock Text="⚙" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
                            Foreground="#0D1F2D"/>
             </Border>
             <TextBlock Text="Configurações" FontSize="18" FontWeight="SemiBold"

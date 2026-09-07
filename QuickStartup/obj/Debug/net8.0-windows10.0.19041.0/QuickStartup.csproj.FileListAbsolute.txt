@@ -2,7 +2,6 @@ C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\ne
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\Views\SettingsWindow.baml
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\App.baml
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\MainWindow.g.cs
-C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\Views\ProfileEditorWindow.g.cs
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\Views\SettingsWindow.g.cs
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\App.g.cs
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\GeneratedInternalTypeHelper.g.cs
@@ -17,7 +16,6 @@ C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\bin\Debug\ne
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\bin\Debug\net8.0-windows10.0.19041.0\Microsoft.Windows.SDK.NET.dll
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\bin\Debug\net8.0-windows10.0.19041.0\WinRT.Runtime.dll
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\MainWindow.baml
-C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\Views\ProfileEditorWindow.baml
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\QuickStartup.g.resources
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\QuickStartup.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\obj\Debug\net8.0-windows10.0.19041.0\QuickStartup.AssemblyInfoInputs.cache

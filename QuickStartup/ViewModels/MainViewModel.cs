@@ -81,6 +81,24 @@ public class MainViewModel : INotifyPropertyChanged
     // atualização — injetada pela View, já que a VM não deve depender de detalhes da janela.
     public Action? RequestAppExitAction { get; set; }
 
+    // Edição de perfil vira uma navegação interna (troca de conteúdo na mesma janela)
+    // em vez de abrir uma nova Window — ver MainWindow.xaml (painel "Editor").
+    private bool _isEditingProfile;
+    public bool IsEditingProfile
+    {
+        get => _isEditingProfile;
+        private set { _isEditingProfile = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsNotEditingProfile)); }
+    }
+
+    public bool IsNotEditingProfile => !_isEditingProfile;
+
+    private ProfileEditorViewModel? _editorViewModel;
+    public ProfileEditorViewModel? EditorViewModel
+    {
+        get => _editorViewModel;
+        private set { _editorViewModel = value; OnPropertyChanged(); }
+    }
+
     public RelayCommand ExecuteProfileCommand { get; }
     public RelayCommand NewProfileCommand     { get; }
     public RelayCommand EditProfileCommand    { get; }
@@ -89,9 +107,8 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand CancelCommand         { get; }
     public RelayCommand OpenSettingsCommand   { get; }
 
-    // Ações que abrem janelas — injetadas pela View para manter a VM testável
-    public Action<Profile>? OpenEditorAction   { get; set; }
-    public Action? OpenSettingsAction          { get; set; }
+    // Ação que abre a janela de configurações — injetada pela View para manter a VM testável
+    public Action? OpenSettingsAction { get; set; }
 
     // Confirmação antes de excluir — injetada pela View (MessageBox). Se não for
     // definida (ex: em testes), a exclusão prossegue sem pedir confirmação.
@@ -186,14 +203,26 @@ public class MainViewModel : INotifyPropertyChanged
         var profile = new Profile();
         _profileService.Add(profile);
         SelectedProfile = profile;
-        OpenEditorAction?.Invoke(profile);
+        OpenEditor(profile);
     }
 
     private void EditProfile()
     {
         if (SelectedProfile is null) return;
-        OpenEditorAction?.Invoke(SelectedProfile);
-        _profileService.Save();
+        OpenEditor(SelectedProfile);
+    }
+
+    private void OpenEditor(Profile profile)
+    {
+        EditorViewModel = new ProfileEditorViewModel(profile, _profileService)
+        {
+            CloseAction = () =>
+            {
+                IsEditingProfile = false;
+                EditorViewModel  = null;
+            }
+        };
+        IsEditingProfile = true;
     }
 
     private void DuplicateProfile()

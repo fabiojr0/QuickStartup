@@ -21,11 +21,6 @@ public partial class MainWindow : Window
 
         _vm = new MainViewModel(profileService, windowService)
         {
-            OpenEditorAction = profile =>
-            {
-                var editor = new ProfileEditorWindow(profile, profileService) { Owner = this };
-                editor.ShowDialog();
-            },
             OpenSettingsAction = () =>
             {
                 var settings = new SettingsWindow(profileService) { Owner = this };

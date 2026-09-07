@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:helpers="clr-namespace:QuickStartup.Helpers"
-        Title="QuickStartup" Height="600" Width="880"
-        MinHeight="440" MinWidth="660"
+        Title="QuickStartup" Height="700" Width="960"
+        MinHeight="560" MinWidth="760"
         Background="#202020" Foreground="#F3F3F3"
         FontFamily="Segoe UI Variable Text, Segoe UI"
         WindowStartupLocation="CenterScreen"
@@ -14,6 +14,11 @@
         <helpers:BoolToDefaultTextConverter x:Key="BoolToDefaultText"/>
         <helpers:InitialLetterConverter x:Key="InitialLetter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <!-- NullToVisibility: visible=true → mostra quando null (placeholder do formulário de app) -->
+        <helpers:NullToVisibilityConverter x:Key="NullToVisibility"    VisibleWhenNull="True"/>
+        <!-- NotNullToVisibility: visible=false → mostra quando não-null (formulário de app) -->
+        <helpers:NullToVisibilityConverter x:Key="NotNullToVisibility" VisibleWhenNull="False"/>
+        <helpers:MonitorHighlightConverter x:Key="MonitorHighlight"/>
 
         <!-- Paleta inspirada no Fluent/Windows 11 (tema escuro da Microsoft Store) -->
         <SolidColorBrush x:Key="PageBg"      Color="#202020"/>
@@ -48,7 +53,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6"
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
@@ -78,10 +83,12 @@
             <Setter Property="Foreground"   Value="#3D0C12"/>
         </Style>
 
-        <!-- Botão de ícone circular (barra de ferramentas dos perfis, botão de config no header) -->
+        <!-- Botão de ícone circular (perfis, apps, config, notificação) — todo ícone do app
+             usa a fonte Segoe Fluent Icons/MDL2, glifos sólidos e arredondados por padrão. -->
         <Style x:Key="BtnIcon" TargetType="Button">
             <Setter Property="Background"      Value="Transparent"/>
             <Setter Property="Foreground"      Value="{StaticResource Text}"/>
+            <Setter Property="FontFamily"      Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
             <Setter Property="Width"           Value="34"/>
             <Setter Property="Height"          Value="34"/>
             <Setter Property="Cursor"          Value="Hand"/>
@@ -119,6 +126,34 @@
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                 BorderBrush="Transparent" BorderThickness="1"
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Overlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2660CDFF"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Item da lista de apps (dentro do editor de perfil) -->
+        <Style x:Key="AppListItem" TargetType="ListBoxItem">
+            <Setter Property="Foreground"    Value="{StaticResource Text}"/>
+            <Setter Property="Background"    Value="Transparent"/>
+            <Setter Property="Padding"       Value="10,8"/>
+            <Setter Property="Margin"        Value="0,2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent" BorderThickness="1"
                                 CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter/>
                         </Border>
@@ -139,7 +174,7 @@
         <!-- "Chip" de app dentro do card de detalhes -->
         <Style x:Key="AppChip" TargetType="Border">
             <Setter Property="Background"   Value="{StaticResource Overlay}"/>
-            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding"      Value="10,7"/>
             <Setter Property="Margin"       Value="0,0,0,6"/>
         </Style>
@@ -148,6 +183,113 @@
             <Setter Property="Background"   Value="{StaticResource SurfaceHigh}"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Padding"      Value="7,2"/>
+        </Style>
+
+        <!-- Campos de formulário do editor de perfil -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource Subtext}"/>
+            <Setter Property="Margin"     Value="0,8,0,3"/>
+        </Style>
+
+        <Style x:Key="FieldBox" TargetType="TextBox">
+            <Setter Property="Background"      Value="{StaticResource Overlay}"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource SurfaceHigh}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="8,5"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="CaretBrush"      Value="{StaticResource Accent}"/>
+        </Style>
+
+        <Style x:Key="FieldCombo" TargetType="ComboBox">
+            <Setter Property="Background"      Value="{StaticResource Overlay}"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource SurfaceHigh}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="8,5"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <!-- Template completo: o popup padrão do ComboBox ignora as cores do app
+                 e usa o tema claro do Windows, ficando ilegível sobre o fundo escuro. -->
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Padding"    Value="8,6"/>
+                        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ComboBoxItem">
+                                    <Border x:Name="Bd" Background="Transparent" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsHighlighted" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Surface}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#2660CDFF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="Bd"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6"/>
+                            <ToggleButton x:Name="ToggleButton" Focusable="False" ClickMode="Press"
+                                          Background="Transparent" BorderThickness="0"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Grid Background="Transparent">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="1" Text="&#xE70D;"
+                                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"
+                                                       Foreground="{StaticResource Subtext}"
+                                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <Popup x:Name="Popup" Placement="Bottom" AllowsTransparency="True"
+                                   Focusable="False" PopupAnimation="Slide"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}">
+                                <Border Background="{StaticResource Overlay}" BorderBrush="{StaticResource SurfaceHigh}"
+                                        BorderThickness="1" CornerRadius="6" Margin="0,2,0,0"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        MaxHeight="240">
+                                    <ScrollViewer Margin="2" SnapsToDevicePixels="True">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Menu da bandeja (clique direito no ícone em segundo plano): fundo cinza e cantos arredondados -->
@@ -273,7 +415,7 @@
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
 
-        <!-- Header -->
+        <!-- Header: alterna entre a marca do app (lista) e "Voltar" + nome do perfil (editor) -->
         <Border Grid.Row="1" Background="{StaticResource PageBg}" Padding="20,0">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -281,8 +423,9 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="30" Height="30" CornerRadius="7" Background="{StaticResource AvatarGradient}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding IsNotEditingProfile, Converter={StaticResource BoolToVisibility}}">
+                    <Border Width="30" Height="30" CornerRadius="9" Background="{StaticResource AvatarGradient}">
                         <TextBlock Text="⚡" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="QuickStartup" FontSize="18" FontWeight="SemiBold"
@@ -290,41 +433,54 @@
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <Button Grid.Column="1" Content="⚙" Style="{StaticResource BtnIcon}" FontSize="16"
+                <Button Grid.Column="1" Content="&#xE713;" Style="{StaticResource BtnIcon}" FontSize="16"
                         Command="{Binding OpenSettingsCommand}"
                         ToolTip="Configurações"
-                        VerticalAlignment="Center"/>
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsNotEditingProfile, Converter={StaticResource BoolToVisibility}}"/>
+
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding IsEditingProfile, Converter={StaticResource BoolToVisibility}}">
+                    <Button Content="&#xE72B;" Style="{StaticResource BtnIcon}" FontSize="15" Margin="0,0,10,0"
+                            Command="{Binding EditorViewModel.CancelCommand}" ToolTip="Voltar para a lista de perfis"/>
+                    <TextBlock Text="Editando perfil" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text}" VerticalAlignment="Center"/>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Aviso de nova versão disponível (checagem via GitHub Releases) -->
-        <Border Grid.Row="2" Background="{StaticResource SurfaceHigh}" CornerRadius="8"
-                Margin="20,0,20,12" Padding="14,10"
-                Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibility}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+        <!-- Aviso de nova versão disponível (checagem via GitHub Releases) — escondido durante a edição -->
+        <Grid Grid.Row="2" Visibility="{Binding IsNotEditingProfile, Converter={StaticResource BoolToVisibility}}">
+            <Border Background="{StaticResource SurfaceHigh}" CornerRadius="10"
+                    Margin="20,0,20,12" Padding="14,10"
+                    Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="12.5">
-                    <Run Text="🔔 Nova versão disponível: "/>
-                    <Run Text="{Binding UpdateVersionText, Mode=OneWay}" FontWeight="SemiBold"/>
-                </TextBlock>
+                    <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="12.5">
+                        <Run Text="&#xE7E7;  " FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{StaticResource Accent}"/>
+                        <Run Text="Nova versão disponível: "/>
+                        <Run Text="{Binding UpdateVersionText, Mode=OneWay}" FontWeight="SemiBold"/>
+                    </TextBlock>
 
-                <Button Grid.Column="1" Content="{Binding UpdateButtonText}" Style="{StaticResource BtnPrimary}"
-                        Padding="14,7" Margin="10,0,6,0" IsEnabled="{Binding IsNotUpdating}"
-                        Command="{Binding OpenUpdateCommand}"/>
+                    <Button Grid.Column="1" Content="{Binding UpdateButtonText}" Style="{StaticResource BtnPrimary}"
+                            Padding="14,7" Margin="10,0,6,0" IsEnabled="{Binding IsNotUpdating}"
+                            Command="{Binding OpenUpdateCommand}"/>
 
-                <Button Grid.Column="2" Content="✕" Style="{StaticResource BtnIcon}"
-                        Width="28" Height="28" FontSize="11" IsEnabled="{Binding IsNotUpdating}"
-                        Command="{Binding DismissUpdateCommand}" ToolTip="Dispensar"/>
-            </Grid>
-        </Border>
+                    <Button Grid.Column="2" Content="&#xE711;" Style="{StaticResource BtnIcon}"
+                            Width="28" Height="28" FontSize="11" IsEnabled="{Binding IsNotUpdating}"
+                            Command="{Binding DismissUpdateCommand}" ToolTip="Dispensar"/>
+                </Grid>
+            </Border>
+        </Grid>
 
-        <!-- Conteúdo principal -->
-        <Grid Grid.Row="3" Margin="20,4,20,20">
+        <!-- Conteúdo principal: lista de perfis + detalhes -->
+        <Grid Grid.Row="3" Margin="20,4,20,20"
+              Visibility="{Binding IsNotEditingProfile, Converter={StaticResource BoolToVisibility}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="270" MinWidth="200"/>
                 <ColumnDefinition Width="16"/>
@@ -332,19 +488,29 @@
             </Grid.ColumnDefinitions>
 
             <!-- Painel de perfis -->
-            <Border Grid.Column="0" Background="{StaticResource Surface}" CornerRadius="10"
+            <Border Grid.Column="0" Background="{StaticResource Surface}" CornerRadius="12"
                     Padding="12" Effect="{StaticResource CardShadow}">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="Perfis" FontSize="13" FontWeight="SemiBold"
-                               Foreground="{StaticResource Subtext}" Margin="6,2,0,8"/>
+                    <TextBlock Grid.Row="0" Text="Perfis" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource Subtext}" Margin="6,2,0,10"/>
 
-                    <ListBox Grid.Row="1"
+                    <!-- Ação primária, sempre visível e clara: criar um perfil novo -->
+                    <Button Grid.Row="1" Style="{StaticResource BtnPrimary}" Margin="0,0,0,10"
+                            Command="{Binding NewProfileCommand}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Novo perfil" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <ListBox Grid.Row="2"
                              ItemsSource="{Binding Profiles}"
                              SelectedItem="{Binding SelectedProfile}"
                              Background="Transparent"
@@ -379,14 +545,13 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <StackPanel Grid.Row="2" Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="✚" Style="{StaticResource BtnIcon}"
-                                Command="{Binding NewProfileCommand}" ToolTip="Novo perfil" Margin="0,0,4,0"/>
-                        <Button Content="✎" Style="{StaticResource BtnIcon}"
+                    <!-- Ações contextuais do perfil selecionado -->
+                    <StackPanel Grid.Row="3" Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="&#xE70F;" Style="{StaticResource BtnIcon}"
                                 Command="{Binding EditProfileCommand}" ToolTip="Editar" Margin="0,0,4,0"/>
-                        <Button Content="⧉" Style="{StaticResource BtnIcon}"
+                        <Button Content="&#xE8C8;" Style="{StaticResource BtnIcon}"
                                 Command="{Binding DuplicateProfileCommand}" ToolTip="Duplicar" Margin="0,0,4,0"/>
-                        <Button Content="✕" Style="{StaticResource BtnIcon}" Foreground="{StaticResource Red}"
+                        <Button Content="&#xE74D;" Style="{StaticResource BtnIcon}" Foreground="{StaticResource Red}"
                                 Command="{Binding DeleteProfileCommand}" ToolTip="Excluir"/>
                     </StackPanel>
                 </Grid>
@@ -402,7 +567,7 @@
 
                 <!-- Info do perfil selecionado -->
                 <Border Grid.Row="0" Background="{StaticResource Surface}"
-                        CornerRadius="10" Padding="18" Margin="0,0,0,16"
+                        CornerRadius="12" Padding="18" Margin="0,0,0,16"
                         Effect="{StaticResource CardShadow}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -410,7 +575,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Width="52" Height="52" CornerRadius="12"
+                        <Border Grid.Column="0" Width="52" Height="52" CornerRadius="14"
                                 Background="{StaticResource AvatarGradient}"
                                 VerticalAlignment="Top" Margin="0,0,14,0">
                             <TextBlock Text="{Binding SelectedProfile.Name, Converter={StaticResource InitialLetter}, FallbackValue='–'}"
@@ -456,7 +621,7 @@
 
                 <!-- Log de execução -->
                 <Border Grid.Row="1" Background="{StaticResource Surface}"
-                        CornerRadius="10" Padding="16" Effect="{StaticResource CardShadow}">
+                        CornerRadius="12" Padding="16" Effect="{StaticResource CardShadow}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -501,13 +666,375 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="▶  Executar Perfil"
-                            Style="{StaticResource BtnPrimary}" FontSize="14.5" Padding="0,12"
+                    <Button Grid.Column="0" Style="{StaticResource BtnPrimary}" FontSize="14.5" Padding="0,12"
                             Effect="{StaticResource GlowShadow}"
-                            Command="{Binding ExecuteProfileCommand}"/>
+                            Command="{Binding ExecuteProfileCommand}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE768;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Executar Perfil" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button Grid.Column="1" Content="Cancelar"
                             Style="{StaticResource BtnDanger}" Margin="10,0,0,0" Padding="16,12"
                             Command="{Binding CancelCommand}"/>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- Conteúdo principal: editor de perfil (navegação interna, sem nova janela) -->
+        <Grid Grid.Row="3" Margin="20,4,20,20"
+              Visibility="{Binding IsEditingProfile, Converter={StaticResource BoolToVisibility}}">
+            <Grid x:Name="EditorRoot" DataContext="{Binding EditorViewModel}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Nome do perfil -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock Text="Nome do Perfil" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource FieldBox}" FontSize="15"/>
+                </StackPanel>
+
+                <!-- Conteúdo: lista de apps + formulário -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="240" MinWidth="180"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Lista de apps -->
+                    <Border Grid.Column="0" Background="{StaticResource Surface}" CornerRadius="12"
+                            Padding="14" Effect="{StaticResource CardShadow}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="Aplicativos" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Subtext}" Margin="0,0,0,8"/>
+
+                            <Button Grid.Row="1" Style="{StaticResource BtnPrimary}" Margin="0,0,0,8"
+                                    Command="{Binding AddAppCommand}">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Adicionar" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <ListBox Grid.Row="2"
+                                     ItemsSource="{Binding Apps}"
+                                     SelectedItem="{Binding SelectedApp}"
+                                     Background="Transparent"
+                                     BorderThickness="0" Padding="0"
+                                     ItemContainerStyle="{StaticResource AppListItem}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontSize="13"/>
+                                            <TextBlock FontSize="11" Foreground="{StaticResource Subtext}"
+                                                       Text="{Binding ExecutablePath}"
+                                                       TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Ações contextuais do app selecionado -->
+                            <StackPanel Grid.Row="3" Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button Content="&#xE70E;" Style="{StaticResource BtnIcon}"
+                                        Command="{Binding MoveUpCommand}" ToolTip="Subir" Margin="0,0,4,0"/>
+                                <Button Content="&#xE70D;" Style="{StaticResource BtnIcon}"
+                                        Command="{Binding MoveDownCommand}" ToolTip="Descer" Margin="0,0,4,0"/>
+                                <Button Content="&#xE74D;" Style="{StaticResource BtnIcon}" Foreground="{StaticResource Red}"
+                                        Command="{Binding RemoveAppCommand}" ToolTip="Remover"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Formulário do app -->
+                    <Border Grid.Column="2" Background="{StaticResource Surface}" CornerRadius="12"
+                            Padding="16" Effect="{StaticResource CardShadow}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Configuração do Aplicativo" FontSize="14" FontWeight="SemiBold"
+                                       Margin="0,0,0,4"/>
+
+                            <!-- Placeholder quando nenhum app está selecionado -->
+                            <TextBlock Visibility="{Binding SelectedApp, Converter={StaticResource NullToVisibility}}"
+                                       Text="Selecione ou adicione um aplicativo para configurar."
+                                       Foreground="{StaticResource Subtext}" FontSize="13"
+                                       Margin="0,20"/>
+
+                            <!-- Formulário (visível quando há seleção) -->
+                            <StackPanel Visibility="{Binding SelectedApp, Converter={StaticResource NotNullToVisibility}}">
+
+                                <TextBlock Text="Nome de exibição" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding SelectedApp.Name, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource FieldBox}"/>
+
+                                <TextBlock Text="Aplicativo conhecido" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding AppSuggestions}"
+                                          SelectedItem="{Binding SelectedAppSuggestion}"
+                                          DisplayMemberPath="Name"
+                                          Style="{StaticResource FieldCombo}"/>
+                                <TextBlock Text="Apps já usados em outros perfis ou instalados no Windows. Selecione um para preencher o caminho automaticamente, ou informe manualmente abaixo."
+                                           FontSize="11" Foreground="{StaticResource Subtext}"
+                                           TextWrapping="Wrap" Margin="0,3,0,0"/>
+
+                                <TextBlock Text="Caminho do executável" Style="{StaticResource FieldLabel}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding SelectedApp.ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource FieldBox}"/>
+                                    <Button Grid.Column="1" Style="{StaticResource BtnSecondary}" Margin="6,0,0,0"
+                                            Command="{Binding BrowseExeCommand}">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBlock Text="&#xE8DE;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Procurar" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <TextBlock Text="Argumentos (opcional)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding SelectedApp.Arguments, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource FieldBox}"
+                                         ToolTip="Ex: --new-window https://google.com"/>
+
+                                <TextBlock Text="Monitor de destino" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding Monitors}"
+                                          SelectedIndex="{Binding SelectedApp.MonitorIndex}"
+                                          DisplayMemberPath="DisplayName"
+                                          Style="{StaticResource FieldCombo}"/>
+
+                                <!-- Prévia visual dos monitores: posições reais (X/Y), como configurado no Windows -->
+                                <TextBlock Text="Disposição dos monitores" Style="{StaticResource FieldLabel}"/>
+                                <Border Background="{StaticResource Surface}" CornerRadius="8"
+                                        Padding="12" Margin="0,0,0,4" Width="460" Height="90"
+                                        HorizontalAlignment="Left">
+                                    <ItemsControl ItemsSource="{Binding MonitorPreviewItems}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <Canvas/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemContainerStyle>
+                                            <Style TargetType="ContentPresenter">
+                                                <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                                                <Setter Property="Canvas.Top"  Value="{Binding Y}"/>
+                                            </Style>
+                                        </ItemsControl.ItemContainerStyle>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <!-- Clicável: escolhe este monitor como destino do app selecionado.
+                                                     Numeração (1, 2, 3...) igual à do select "Monitor de destino". -->
+                                                <Button Width="{Binding Width}" Height="{Binding Height}"
+                                                        Cursor="Hand" Focusable="False"
+                                                        ToolTip="{Binding Monitor.DisplayName}"
+                                                        Command="{Binding DataContext.SelectMonitorCommand, ElementName=EditorRoot}"
+                                                        CommandParameter="{Binding Monitor.Index}">
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border CornerRadius="6" BorderThickness="2">
+                                                                <Border.BorderBrush>
+                                                                    <MultiBinding Converter="{StaticResource MonitorHighlight}" ConverterParameter="Border">
+                                                                        <Binding Path="Monitor.Index"/>
+                                                                        <Binding Path="Monitor.IsPrimary"/>
+                                                                        <Binding Path="DataContext.SelectedApp.MonitorIndex" ElementName="EditorRoot"/>
+                                                                    </MultiBinding>
+                                                                </Border.BorderBrush>
+                                                                <Border.Background>
+                                                                    <MultiBinding Converter="{StaticResource MonitorHighlight}" ConverterParameter="Background">
+                                                                        <Binding Path="Monitor.Index"/>
+                                                                        <Binding Path="Monitor.IsPrimary"/>
+                                                                        <Binding Path="DataContext.SelectedApp.MonitorIndex" ElementName="EditorRoot"/>
+                                                                    </MultiBinding>
+                                                                </Border.Background>
+                                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Monitor.Number, Mode=OneWay}" FontSize="14" FontWeight="Bold"
+                                                                               HorizontalAlignment="Center"
+                                                                               Foreground="{StaticResource Text}"/>
+                                                                    <TextBlock FontSize="8" HorizontalAlignment="Center"
+                                                                               Foreground="{StaticResource Subtext}">
+                                                                        <Run Text="{Binding Monitor.Bounds.Width, Mode=OneWay}"/>
+                                                                        <Run Text="×"/>
+                                                                        <Run Text="{Binding Monitor.Bounds.Height, Mode=OneWay}"/>
+                                                                    </TextBlock>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+
+                                <!-- Maximizar -->
+                                <CheckBox Content="Maximizar na tela escolhida"
+                                          IsChecked="{Binding SelectedApp.Maximize}"
+                                          Foreground="{StaticResource Text}" Margin="0,8,0,0"/>
+
+                                <!-- Alternância pixels/porcentagem + atalhos de posicionamento -->
+                                <StackPanel Margin="0,8,0,0">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedApp.Maximize}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                    <Setter Property="Opacity"   Value="0.4"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <CheckBox Content="Definir tamanho em porcentagem da tela (em vez de pixels)"
+                                              IsChecked="{Binding SelectedApp.UsePercentSize}"
+                                              Foreground="{StaticResource Text}" Margin="0,4,0,8"/>
+
+                                    <TextBlock Text="Atalhos de posição" Style="{StaticResource FieldLabel}" Margin="0,0,0,3"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <Button Content="◧ Esquerda" Style="{StaticResource BtnSecondary}" Padding="8,5" Margin="0,0,4,0"
+                                                Command="{Binding PositionPresetCommand}" CommandParameter="Left"/>
+                                        <Button Content="◨ Direita" Style="{StaticResource BtnSecondary}" Padding="8,5" Margin="0,0,4,0"
+                                                Command="{Binding PositionPresetCommand}" CommandParameter="Right"/>
+                                        <Button Content="⬒ Cima" Style="{StaticResource BtnSecondary}" Padding="8,5" Margin="0,0,4,0"
+                                                Command="{Binding PositionPresetCommand}" CommandParameter="Top"/>
+                                        <Button Content="⬓ Baixo" Style="{StaticResource BtnSecondary}" Padding="8,5"
+                                                Command="{Binding PositionPresetCommand}" CommandParameter="Bottom"/>
+                                    </StackPanel>
+
+                                    <!-- Campos em pixels -->
+                                    <StackPanel>
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedApp.UsePercentSize}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+
+                                        <TextBlock Text="Posição e Tamanho (px, relativos ao monitor)"
+                                                   Style="{StaticResource FieldLabel}"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/><ColumnDefinition/>
+                                                <ColumnDefinition/><ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/><RowDefinition/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Text="X"       Style="{StaticResource FieldLabel}" Grid.Column="0"/>
+                                            <TextBlock Text="Y"       Style="{StaticResource FieldLabel}" Grid.Column="1" Margin="8,8,0,3"/>
+                                            <TextBlock Text="Largura" Style="{StaticResource FieldLabel}" Grid.Column="2" Margin="8,8,0,3"/>
+                                            <TextBlock Text="Altura"  Style="{StaticResource FieldLabel}" Grid.Column="3" Margin="8,8,0,3"/>
+
+                                            <TextBox Grid.Row="1" Grid.Column="0"
+                                                     Text="{Binding SelectedApp.X, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                            <TextBox Grid.Row="1" Grid.Column="1" Margin="8,0,0,0"
+                                                     Text="{Binding SelectedApp.Y, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                            <TextBox Grid.Row="1" Grid.Column="2" Margin="8,0,0,0"
+                                                     Text="{Binding SelectedApp.Width, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                            <TextBox Grid.Row="1" Grid.Column="3" Margin="8,0,0,0"
+                                                     Text="{Binding SelectedApp.Height, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <!-- Campos em porcentagem -->
+                                    <StackPanel>
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedApp.UsePercentSize}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+
+                                        <TextBlock Text="Posição e Tamanho (% da tela)"
+                                                   Style="{StaticResource FieldLabel}"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/><ColumnDefinition/>
+                                                <ColumnDefinition/><ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/><RowDefinition/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Text="X %"       Style="{StaticResource FieldLabel}" Grid.Column="0"/>
+                                            <TextBlock Text="Y %"       Style="{StaticResource FieldLabel}" Grid.Column="1" Margin="8,8,0,3"/>
+                                            <TextBlock Text="Largura %" Style="{StaticResource FieldLabel}" Grid.Column="2" Margin="8,8,0,3"/>
+                                            <TextBlock Text="Altura %"  Style="{StaticResource FieldLabel}" Grid.Column="3" Margin="8,8,0,3"/>
+
+                                            <TextBox Grid.Row="1" Grid.Column="0"
+                                                     Text="{Binding SelectedApp.XPercent, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                            <TextBox Grid.Row="1" Grid.Column="1" Margin="8,0,0,0"
+                                                     Text="{Binding SelectedApp.YPercent, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                            <TextBox Grid.Row="1" Grid.Column="2" Margin="8,0,0,0"
+                                                     Text="{Binding SelectedApp.WidthPercent, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                            <TextBox Grid.Row="1" Grid.Column="3" Margin="8,0,0,0"
+                                                     Text="{Binding SelectedApp.HeightPercent, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource FieldBox}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Delay -->
+                                <TextBlock Text="Aguardar antes de reposicionar (ms)"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider Minimum="0" Maximum="10000" SmallChange="100" LargeChange="500"
+                                            Value="{Binding SelectedApp.DelayMs}"
+                                            Width="220" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding SelectedApp.DelayMs}"
+                                               Margin="10,0,0,0" VerticalAlignment="Center"
+                                               FontFamily="Cascadia Code, Consolas" Foreground="{StaticResource Accent}"/>
+                                    <TextBlock Text=" ms" VerticalAlignment="Center" Foreground="{StaticResource Subtext}"/>
+                                </StackPanel>
+
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                    </Border>
+                </Grid>
+
+                <!-- Rodapé -->
+                <Grid Grid.Row="2" Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="1" Content="Cancelar"
+                            Style="{StaticResource BtnSecondary}" Margin="0,0,8,0" Padding="16,8"
+                            Command="{Binding CancelCommand}"/>
+                    <Button Grid.Column="2" Content="Salvar Perfil"
+                            Style="{StaticResource BtnPrimary}" Padding="16,8"
+                            Effect="{StaticResource GlowShadow}"
+                            Command="{Binding SaveCommand}"/>
                 </Grid>
             </Grid>
         </Grid>

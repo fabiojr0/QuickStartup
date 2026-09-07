@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "QuickStartup/1.0.0": {
+      "QuickStartup/1.1.0": {
         "dependencies": {
           "Hardcodet.NotifyIcon.Wpf": "2.0.1",
           "runtimepack.Microsoft.Windows.SDK.NET.Ref": "10.0.19041.56"
@@ -38,7 +38,7 @@
     }
   },
   "libraries": {
-    "QuickStartup/1.0.0": {
+    "QuickStartup/1.1.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

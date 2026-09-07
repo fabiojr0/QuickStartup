@@ -1,5 +1,5 @@
 ﻿QuickStartup
-1.0.0.0
+1.1.0.0
 
 winexe
 C#
@@ -12,7 +12,7 @@ TRACE;RELEASE;NET;NET8_0;NETCOREAPP
 C:\Users\fabio\OneDrive\Documentos\GitHub\QuickStartup\QuickStartup\App.xaml
 3586863553
 
-21-998022638
+22142444855
 210-984598472
 MainWindow.xaml;Views\ProfileEditorWindow.xaml;Views\SettingsWindow.xaml;
 

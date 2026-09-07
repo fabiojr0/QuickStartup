@@ -67,6 +67,7 @@ public class ProfileEditorViewModel : INotifyPropertyChanged
     public RelayCommand PositionPresetCommand { get; }
     public RelayCommand SelectMonitorCommand  { get; }
     public RelayCommand SaveCommand           { get; }
+    public RelayCommand CancelCommand         { get; }
 
     public Action? CloseAction          { get; set; }
 
@@ -91,6 +92,7 @@ public class ProfileEditorViewModel : INotifyPropertyChanged
         PositionPresetCommand = new(param => ApplyPositionPreset(param as string), _ => SelectedApp is not null);
         SelectMonitorCommand  = new(param => SelectMonitor(param as int?), _ => SelectedApp is not null);
         SaveCommand           = new(Save);
+        CancelCommand         = new(() => CloseAction?.Invoke());
     }
 
     private static List<MonitorPreviewItem> BuildMonitorPreview(

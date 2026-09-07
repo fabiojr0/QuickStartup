@@ -81,11 +81,7 @@ public static class AppDiscoveryService
         {
             if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) continue;
 
-            IEnumerable<string> shortcuts;
-            try { shortcuts = Directory.EnumerateFiles(dir, "*.lnk", SearchOption.AllDirectories); }
-            catch { continue; }
-
-            foreach (var lnk in shortcuts)
+            foreach (var lnk in EnumerateShortcutsSafe(dir))
             {
                 var name = Path.GetFileNameWithoutExtension(lnk);
                 if (name.Contains("uninstall", StringComparison.OrdinalIgnoreCase)) continue;
@@ -103,6 +99,29 @@ public static class AppDiscoveryService
             .Select(kv => (Name: kv.Value, Path: kv.Key))
             .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>Percorre atalhos .lnk recursivamente, pulando subpastas sem permissão de acesso
+    /// em vez de abortar a busca inteira. Directory.EnumerateFiles(..., AllDirectories) não serve
+    /// aqui: é avaliado de forma preguiçosa, então um UnauthorizedAccessException numa subpasta
+    /// (ex.: "Startup" com ACL restrita nesta máquina) estoura no meio do foreach do chamador,
+    /// não na chamada em si — por isso força a lista com ToList() dentro do try.</summary>
+    private static IEnumerable<string> EnumerateShortcutsSafe(string dir)
+    {
+        List<string> files;
+        try { files = Directory.EnumerateFiles(dir, "*.lnk").ToList(); }
+        catch { files = new List<string>(); }
+
+        foreach (var file in files)
+            yield return file;
+
+        List<string> subDirs;
+        try { subDirs = Directory.EnumerateDirectories(dir).ToList(); }
+        catch { subDirs = new List<string>(); }
+
+        foreach (var subDir in subDirs)
+            foreach (var file in EnumerateShortcutsSafe(subDir))
+                yield return file;
     }
 
     private static string? ResolveShortcutTarget(object shell, string lnkPath)
