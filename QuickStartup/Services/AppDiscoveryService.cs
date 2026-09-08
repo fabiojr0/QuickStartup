@@ -53,9 +53,19 @@ public static class AppDiscoveryService
         return results;
     }
 
-    public static List<(string Name, string Path)> GetInstalledApps()
+    /// <summary>Chave que identifica um atalho de forma única: caminho + argumentos. Necessário
+    /// porque launchers como Riot Client/Steam/Ubisoft Connect criam vários atalhos apontando para
+    /// o MESMO .exe do launcher, diferindo só nos argumentos (ex.: "--launch-product=league_of_legends")
+    /// — deduplicar só por caminho faria um atalho sobrescrever silenciosamente o outro.</summary>
+    private readonly record struct ShortcutKey(string Path, string Arguments)
     {
-        var byPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public static ShortcutKey Of(string path, string arguments) =>
+            new(path.ToLowerInvariant(), arguments.ToLowerInvariant());
+    }
+
+    public static List<(string Name, string Path, string Arguments)> GetInstalledApps()
+    {
+        var byKey = new Dictionary<ShortcutKey, (string Name, string Path, string Arguments)>();
 
         object? shell;
         try
@@ -86,17 +96,16 @@ public static class AppDiscoveryService
                 var name = Path.GetFileNameWithoutExtension(lnk);
                 if (name.Contains("uninstall", StringComparison.OrdinalIgnoreCase)) continue;
 
-                var target = ResolveShortcutTarget(shell, lnk);
+                var (target, arguments) = ResolveShortcutTarget(shell, lnk);
                 if (string.IsNullOrWhiteSpace(target)) continue;
                 if (!target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
                 if (!File.Exists(target)) continue;
 
-                byPath[target] = name;
+                byKey[ShortcutKey.Of(target, arguments)] = (name, target, arguments);
             }
         }
 
-        return byPath
-            .Select(kv => (Name: kv.Value, Path: kv.Key))
+        return byKey.Values
             .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -124,23 +133,27 @@ public static class AppDiscoveryService
                 yield return file;
     }
 
-    private static string? ResolveShortcutTarget(object shell, string lnkPath)
+    private static (string? Target, string Arguments) ResolveShortcutTarget(object shell, string lnkPath)
     {
         try
         {
             var shellType = shell.GetType();
             var shortcut = shellType.InvokeMember(
                 "CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { lnkPath });
-            if (shortcut is null) return null;
+            if (shortcut is null) return (null, "");
 
             var shortcutType = shortcut.GetType();
-            return shortcutType.InvokeMember(
+            var target = shortcutType.InvokeMember(
                 "TargetPath", BindingFlags.GetProperty, null, shortcut, null) as string;
+            var arguments = shortcutType.InvokeMember(
+                "Arguments", BindingFlags.GetProperty, null, shortcut, null) as string;
+
+            return (target, arguments ?? "");
         }
         catch
         {
             // Atalho quebrado/inacessível — ignora.
-            return null;
+            return (null, "");
         }
     }
 }

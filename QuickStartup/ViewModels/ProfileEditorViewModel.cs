@@ -53,6 +53,7 @@ public class ProfileEditorViewModel : INotifyPropertyChanged
             if (value is null || SelectedApp is null) return;
 
             SelectedApp.ExecutablePath = value.ExecutablePath;
+            SelectedApp.Arguments      = value.Arguments;
             if (string.IsNullOrWhiteSpace(SelectedApp.Name) || SelectedApp.Name == "Novo App")
                 SelectedApp.Name = value.Name;
             OnPropertyChanged(nameof(SelectedApp));
@@ -125,33 +126,44 @@ public class ProfileEditorViewModel : INotifyPropertyChanged
         }).ToList();
     }
 
+    // Chave por caminho + argumentos: launchers como Riot Client/Steam criam vários atalhos
+    // apontando pro MESMO .exe, diferindo só nos argumentos (ex.: qual jogo abrir) — deduplicar
+    // só por caminho faria um atalho sobrescrever silenciosamente o outro.
+    private static string SuggestionKey(string path, string arguments) =>
+        $"{path}{arguments}".ToLowerInvariant();
+
     private static List<AppSuggestion> BuildAppSuggestions(ProfileService profileService)
     {
-        var suggestions = new Dictionary<string, AppSuggestion>(StringComparer.OrdinalIgnoreCase);
+        var suggestions = new Dictionary<string, AppSuggestion>();
 
-        foreach (var (name, path) in AppDiscoveryService.GetInstalledApps())
-            suggestions[path] = new AppSuggestion { Name = name, ExecutablePath = path };
+        foreach (var (name, path, arguments) in AppDiscoveryService.GetInstalledApps())
+            suggestions[SuggestionKey(path, arguments)] =
+                new AppSuggestion { Name = name, ExecutablePath = path, Arguments = arguments };
 
         // Apps da Microsoft Store (WhatsApp, Spotify, Xbox, etc.) — o caminho já vem pronto
         // no formato que o WindowService sabe iniciar; o usuário só vê o nome do app.
         foreach (var (name, shellPath) in AppDiscoveryService.GetInstalledUwpApps())
-            suggestions[shellPath] = new AppSuggestion { Name = name, ExecutablePath = shellPath };
+            suggestions[SuggestionKey(shellPath, "")] = new AppSuggestion { Name = name, ExecutablePath = shellPath };
 
         // Apps já usados em outros perfis contam como "frequentes" e sobem no ranking
         var usage = profileService.Profiles
             .SelectMany(p => p.Apps)
             .Where(a => !string.IsNullOrWhiteSpace(a.ExecutablePath))
-            .GroupBy(a => a.ExecutablePath, StringComparer.OrdinalIgnoreCase);
+            .GroupBy(a => SuggestionKey(a.ExecutablePath, a.Arguments));
 
         foreach (var group in usage)
         {
             var count = group.Count();
-            var name  = group.First(a => !string.IsNullOrWhiteSpace(a.Name)).Name;
+            var first = group.First(a => !string.IsNullOrWhiteSpace(a.Name));
 
             if (suggestions.TryGetValue(group.Key, out var existing))
                 existing.UsageCount = count;
             else
-                suggestions[group.Key] = new AppSuggestion { Name = name, ExecutablePath = group.Key, UsageCount = count };
+                suggestions[group.Key] = new AppSuggestion
+                {
+                    Name = first.Name, ExecutablePath = first.ExecutablePath,
+                    Arguments = first.Arguments, UsageCount = count
+                };
         }
 
         return suggestions.Values

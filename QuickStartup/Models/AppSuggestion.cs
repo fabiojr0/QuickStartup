@@ -6,6 +6,7 @@ public class AppSuggestion
 {
     public string Name { get; set; } = "";
     public string ExecutablePath { get; set; } = "";
+    public string Arguments { get; set; } = "";
     public int UsageCount { get; set; }
 
     public override string ToString() => Name;
