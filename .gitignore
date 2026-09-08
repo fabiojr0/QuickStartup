@@ -1,0 +1,10 @@
+# Build outputs — gerados por dotnet build/publish e build.ps1, nunca fonte
+[Bb]in/
+[Oo]bj/
+builds/
+installer/output/
+
+# Artefatos de usuário/IDE
+*.user
+*.suo
+.vs/
