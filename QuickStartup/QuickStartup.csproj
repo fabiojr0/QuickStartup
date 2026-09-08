@@ -15,9 +15,9 @@
     <!-- RuntimeIdentifier para publish self-contained; build normal funciona sem isso -->
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <!-- Fonte única de versão: build.ps1 lê este valor para nomear o .exe em builds\ -->
-    <Version>1.2.0</Version>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.1</Version>
+    <AssemblyVersion>1.2.1.0</AssemblyVersion>
+    <FileVersion>1.2.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
