@@ -39,6 +39,16 @@ public class SettingsViewModel : INotifyPropertyChanged
             }
 
             if (!TrySetHighPriority(value)) return;
+
+            if (!value)
+                // Desligando: remove as tarefas agendadas de relançamento elevado silencioso
+                // (ver ElevationHelper) — não fazem mais sentido sem prioridade alta.
+                ElevationHelper.RemoveScheduledTasks();
+            else if (ElevationHelper.IsRunningAsAdministrator())
+                // Ligando enquanto já rodando elevado (ex.: app aberto manualmente como admin):
+                // registra as tarefas agora, sem esperar o próximo início elevado.
+                ElevationHelper.EnsureScheduledTasksRegistered();
+
             _highPriority = value;
             OnPropertyChanged();
         }

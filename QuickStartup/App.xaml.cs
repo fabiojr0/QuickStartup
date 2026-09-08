@@ -22,19 +22,31 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
+        // --startup indica que o app foi aberto pelo Windows automaticamente
+        bool isAutoStartup = e.Args.Contains("--startup");
+
         // Prioridade alta exige elevação — se a opção estiver ligada e ainda não
         // estivermos rodando como administrador, relança o app pedindo elevação (UAC)
         // antes de criar o mutex de instância única, senão a cópia elevada se veria
         // como "segunda instância" enquanto esta ainda não terminou.
         if (PriorityService.IsHighPriorityEnabled() && !ElevationHelper.IsRunningAsAdministrator())
         {
-            if (ElevationHelper.TryRelaunchElevated(e.Args))
+            // Tenta primeiro via tarefa agendada (sem prompt de UAC — ver ElevationHelper);
+            // só cai para o UAC interativo se a tarefa não existir/falhar.
+            if (ElevationHelper.TryRelaunchElevatedSilently(isAutoStartup)
+                || ElevationHelper.TryRelaunchElevated(e.Args))
             {
                 Shutdown();
                 return;
             }
             // Usuário cancelou o prompt do UAC (ou falhou) — segue sem elevação,
             // RaiseProcessPriority() vai cair para AboveNormal mais abaixo.
+        }
+        else if (ElevationHelper.IsRunningAsAdministrator() && PriorityService.IsHighPriorityEnabled())
+        {
+            // Já elevado com prioridade alta ligada: garante que as tarefas agendadas existem
+            // e apontam para o caminho atual do .exe (autocorrige após mover/atualizar o app).
+            ElevationHelper.EnsureScheduledTasksRegistered();
         }
 
         _instanceMutex = new Mutex(true, SingleInstanceId, out bool isFirstInstance);
@@ -79,9 +91,6 @@ public partial class App : System.Windows.Application
                 Dispatcher.Invoke(mainWindow.BringToFront);
         })
         { IsBackground = true }.Start();
-
-        // --startup indica que o app foi aberto pelo Windows automaticamente
-        bool isAutoStartup = e.Args.Contains("--startup");
 
         if (isAutoStartup)
         {
