@@ -1,6 +1,14 @@
 # Como lançar uma nova versão
 
-1. **Bump da versão** (edita `QuickStartup.csproj`, commita e cria a tag local):
+> **Ordem importa:** o bump cria a tag apontando pro commit atual. Se você
+> rodar o bump e só depois commitar mais alguma coisa, essa mudança **fica de
+> fora do release** (foi o que aconteceu com a v1.2.0 — o redesign da UI foi
+> commitado depois do bump, e o release saiu sem ele). Sempre:
+> **1) commita/termina tudo → 2) só então roda o bump → 3) push.**
+
+0. **Termine e commite todas as mudanças** que devem entrar nesse release.
+
+1. **Bump da versão** (por último — edita `QuickStartup.csproj`, commita e cria a tag local):
    ```
    .\bump-version.ps1 1.2.0
    ```
