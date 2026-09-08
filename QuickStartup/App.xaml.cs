@@ -1,8 +1,9 @@
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using QuickStartup.Helpers;
 using QuickStartup.Services;
 
 namespace QuickStartup;
@@ -20,6 +21,21 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Prioridade alta exige elevação — se a opção estiver ligada e ainda não
+        // estivermos rodando como administrador, relança o app pedindo elevação (UAC)
+        // antes de criar o mutex de instância única, senão a cópia elevada se veria
+        // como "segunda instância" enquanto esta ainda não terminou.
+        if (PriorityService.IsHighPriorityEnabled() && !ElevationHelper.IsRunningAsAdministrator())
+        {
+            if (ElevationHelper.TryRelaunchElevated(e.Args))
+            {
+                Shutdown();
+                return;
+            }
+            // Usuário cancelou o prompt do UAC (ou falhou) — segue sem elevação,
+            // RaiseProcessPriority() vai cair para AboveNormal mais abaixo.
+        }
 
         _instanceMutex = new Mutex(true, SingleInstanceId, out bool isFirstInstance);
         _showRequestedEvent = new EventWaitHandle(false, EventResetMode.AutoReset, SingleInstanceId + "-Show");
@@ -116,19 +132,14 @@ public partial class App : System.Windows.Application
             mainWindow.ShowUpdateAvailable(update.Version, update.InstallerUrl, update.ReleasePageUrl));
     }
 
-    /// <summary>Sobe a prioridade do processo para AboveNormal para que a janela e o
-    /// posicionamento dos apps do perfil padrão sejam processados mais rápido, mesmo
-    /// concorrendo com outros programas que sobem junto no boot do Windows. Não usa
-    /// High/RealTime para não competir com processos críticos do sistema.</summary>
-    private static void RaiseProcessPriority()
-    {
-        try
-        {
-            using var current = Process.GetCurrentProcess();
-            current.PriorityClass = ProcessPriorityClass.AboveNormal;
-        }
-        catch { /* sem permissão ou processo já finalizando — segue com a prioridade padrão */ }
-    }
+    /// <summary>Sobe a prioridade do processo para que a janela e o posicionamento dos
+    /// apps do perfil padrão sejam processados mais rápido, mesmo concorrendo com outros
+    /// programas que sobem junto no boot do Windows. Usa High somente se o usuário ligou
+    /// essa opção nas configurações (e o app já foi relançado elevado em OnStartup);
+    /// caso contrário fica em AboveNormal, que não exige administrador nem compete tanto
+    /// com processos críticos do sistema quanto High/RealTime.</summary>
+    private static void RaiseProcessPriority() =>
+        PriorityService.ApplyToCurrentProcess(PriorityService.IsHighPriorityEnabled());
 
     private static void LogException(Exception ex)
     {
