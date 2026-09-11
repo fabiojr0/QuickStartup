@@ -20,22 +20,50 @@ public class WindowService
         IReadOnlyList<MonitorInfo> monitors,
         CancellationToken ct = default)
     {
+        // Compartilhado entre todas as tasks lançadas em paralelo: garante que a mesma janela
+        // nunca seja "reivindicada" por duas apps ao mesmo tempo (ver ClaimTracker).
+        var claims = new ClaimTracker();
+
         // Todos os apps são lançados de uma vez — um app lento (ou que estoure o timeout
         // procurando a janela) não atrasa o início dos demais. O DelayMs de cada app continua
         // valendo, só que como uma espera independente antes de reposicionar aquele app específico.
         var tasks = profile.Apps.Select(async app =>
         {
             if (ct.IsCancellationRequested) return;
-            var result = await LaunchAndPositionAsync(app, monitors, ct);
+            var result = await LaunchAndPositionAsync(app, monitors, claims, ct);
             AppLaunched?.Invoke(result);
         });
 
         return Task.WhenAll(tasks);
     }
 
+    /// <summary>Rastreia, entre todas as apps lançadas em paralelo de um mesmo perfil, quais
+    /// janelas já foram atribuídas a alguma app. Sem isso, quando dois apps abrem ao mesmo tempo,
+    /// a busca "achou uma janela nova/em foco" de uma pode encontrar a janela que na verdade
+    /// pertence à outra (ainda não diferenciável por título/processo nesse instante), fazendo a
+    /// janela errada ser movida para a posição configurada para outro app.</summary>
+    private sealed class ClaimTracker
+    {
+        private readonly HashSet<IntPtr> _claimed = new();
+        private readonly object _lock = new();
+
+        // Tenta reivindicar hwnd para o chamador atual. Retorna false se outra app em paralelo
+        // já reivindicou essa mesma janela primeiro.
+        public bool TryClaim(IntPtr hwnd)
+        {
+            lock (_lock) return _claimed.Add(hwnd);
+        }
+
+        public bool IsClaimed(IntPtr hwnd)
+        {
+            lock (_lock) return _claimed.Contains(hwnd);
+        }
+    }
+
     private async Task<AppLaunchResult> LaunchAndPositionAsync(
         AppItem app,
         IReadOnlyList<MonitorInfo> monitors,
+        ClaimTracker claims,
         CancellationToken ct)
     {
         var displayName = app.ToString();
@@ -46,8 +74,8 @@ public class WindowService
         try
         {
             IntPtr hwnd = IsUwpShellPath(app.ExecutablePath)
-                ? await LaunchUwpAndFindWindowAsync(app, ct)
-                : await LaunchWin32AndFindWindowAsync(app, ct);
+                ? await LaunchUwpAndFindWindowAsync(app, claims, ct)
+                : await LaunchWin32AndFindWindowAsync(app, claims, ct);
 
             if (hwnd == IntPtr.Zero)
                 return new(displayName, false, "Janela não encontrada dentro do timeout.");
@@ -71,10 +99,10 @@ public class WindowService
     private static bool IsUwpShellPath(string path) =>
         path.StartsWith(@"shell:AppsFolder\", StringComparison.OrdinalIgnoreCase);
 
-    private static async Task<IntPtr> LaunchWin32AndFindWindowAsync(AppItem app, CancellationToken ct)
+    private static async Task<IntPtr> LaunchWin32AndFindWindowAsync(AppItem app, ClaimTracker claims, CancellationToken ct)
     {
         // Verifica se o processo já está rodando antes de abrir outro
-        var existingHwnd = FindExistingWindow(app.ExecutablePath);
+        var existingHwnd = FindExistingWindow(app.ExecutablePath, claims);
         if (existingHwnd != IntPtr.Zero)
         {
             // Restaura caso esteja minimizado
@@ -97,10 +125,10 @@ public class WindowService
         await Task.Delay(app.DelayMs, ct);
 
         // Tenta localizar o handle da janela principal
-        return await WaitForWindowAsync(process, ct);
+        return await WaitForWindowAsync(process, claims, ct);
     }
 
-    private static async Task<IntPtr> LaunchUwpAndFindWindowAsync(AppItem app, CancellationToken ct)
+    private static async Task<IntPtr> LaunchUwpAndFindWindowAsync(AppItem app, ClaimTracker claims, CancellationToken ct)
     {
         // "explorer.exe shell:AppsFolder\...!App" ativa o app: abre uma instância nova se ele
         // não estiver rodando, ou só traz a janela existente para frente (mesmo comportamento
@@ -115,26 +143,30 @@ public class WindowService
         });
 
         await Task.Delay(app.DelayMs, ct);
-        return await WaitForUwpWindowAsync(before, ct);
+        return await WaitForUwpWindowAsync(before, claims, ct);
     }
 
     // Aguarda a janela do app UWP: ou uma janela nova aparece (primeira abertura),
     // ou o app já estava aberto e a janela existente foi trazida para frente.
-    private static async Task<IntPtr> WaitForUwpWindowAsync(HashSet<IntPtr> before, CancellationToken ct)
+    private static async Task<IntPtr> WaitForUwpWindowAsync(HashSet<IntPtr> before, ClaimTracker claims, CancellationToken ct)
     {
         var deadline  = DateTime.UtcNow.AddMilliseconds(FindWindowTimeoutMs);
         var firstPass = true;
 
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
         {
-            var newWindow = FindNewVisibleWindow(before);
+            var newWindow = FindNewVisibleWindow(before, claims);
             if (newWindow != IntPtr.Zero) return newWindow;
 
             if (!firstPass)
             {
+                // Quando dois apps UWP abrem ao mesmo tempo, a janela em primeiro plano pode
+                // pertencer à OUTRA app que está sendo lançada em paralelo — só aceita se ainda
+                // não foi reivindicada por ela (claims.TryClaim é atômico entre as tasks).
                 var fg = NativeMethods.GetForegroundWindow();
                 if (fg != IntPtr.Zero && !IsOwnProcessWindow(fg)
-                    && NativeMethods.IsWindowVisible(fg) && GetWindowTitle(fg).Length > 0)
+                    && NativeMethods.IsWindowVisible(fg) && GetWindowTitle(fg).Length > 0
+                    && claims.TryClaim(fg))
                     return fg;
             }
 
@@ -156,7 +188,7 @@ public class WindowService
         return set;
     }
 
-    private static IntPtr FindNewVisibleWindow(HashSet<IntPtr> before)
+    private static IntPtr FindNewVisibleWindow(HashSet<IntPtr> before, ClaimTracker claims)
     {
         IntPtr found = IntPtr.Zero;
 
@@ -169,6 +201,8 @@ public class WindowService
             if (NativeMethods.GetWindow(hwnd, NativeMethods.GW_OWNER) != IntPtr.Zero) return true;
             if ((NativeMethods.GetWindowLong(hwnd, NativeMethods.GWL_EXSTYLE) & NativeMethods.WS_EX_TOOLWINDOW) != 0) return true;
             if (GetWindowTitle(hwnd).Length == 0) return true;
+            // Outra app lançada em paralelo já reivindicou essa janela — continua procurando.
+            if (!claims.TryClaim(hwnd)) return true;
 
             found = hwnd;
             return false;
@@ -194,8 +228,13 @@ public class WindowService
         return sb.ToString();
     }
 
-    // Busca uma janela visível de nível superior cujo processo-pai seja o executável
-    private static IntPtr FindExistingWindow(string executablePath)
+    // Busca uma janela visível de nível superior cujo processo-pai seja o executável.
+    // Só considera janelas que já existiam ANTES desse lançamento (i.e. uma instância que já
+    // estava aberta) — uma janela recém-criada por outra app do mesmo perfil, ainda não
+    // reivindicada, não conta como "já rodando" aqui, senão a checagem "já está rodando" de uma
+    // app pode roubar a janela que na verdade pertence a outra app do mesmo executável lançada
+    // em paralelo (ex.: duas entradas apontando pro mesmo app).
+    private static IntPtr FindExistingWindow(string executablePath, ClaimTracker claims)
     {
         var exeName = Path.GetFileNameWithoutExtension(executablePath).ToLowerInvariant();
         IntPtr found = IntPtr.Zero;
@@ -203,6 +242,7 @@ public class WindowService
         NativeMethods.EnumWindows((hwnd, _) =>
         {
             if (!NativeMethods.IsWindowVisible(hwnd)) return true;
+            if (claims.IsClaimed(hwnd)) return true;
 
             NativeMethods.GetWindowThreadProcessId(hwnd, out uint pid);
             try
@@ -210,6 +250,9 @@ public class WindowService
                 var proc = Process.GetProcessById((int)pid);
                 if (proc.ProcessName.ToLowerInvariant() == exeName)
                 {
+                    // Reivindica atomicamente: evita que outra app concorrente pegue essa
+                    // mesma janela entre a checagem e o uso.
+                    if (!claims.TryClaim(hwnd)) return true;
                     found = hwnd;
                     return false; // Para a enumeração
                 }
@@ -223,7 +266,7 @@ public class WindowService
     }
 
     // Aguarda a janela principal do processo aparecer (com timeout)
-    private static async Task<IntPtr> WaitForWindowAsync(Process process, CancellationToken ct)
+    private static async Task<IntPtr> WaitForWindowAsync(Process process, ClaimTracker claims, CancellationToken ct)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(FindWindowTimeoutMs);
 
@@ -234,13 +277,20 @@ public class WindowService
             {
                 process.Refresh();
                 if (process.MainWindowHandle != IntPtr.Zero)
+                {
+                    claims.TryClaim(process.MainWindowHandle);
                     return process.MainWindowHandle;
+                }
             }
             catch { /* processo pode não existir mais */ }
 
             // Fallback: EnumWindows para apps que criam processos filhos (Chrome, Discord)
             var hwnd = FindWindowByPid(process.Id);
-            if (hwnd != IntPtr.Zero) return hwnd;
+            if (hwnd != IntPtr.Zero)
+            {
+                claims.TryClaim(hwnd);
+                return hwnd;
+            }
 
             await Task.Delay(PollIntervalMs, ct);
         }
