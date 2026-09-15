@@ -26,11 +26,23 @@ public class WindowService
         // fazendo a janela errada ser movida para a posição configurada para outro app. Abrir em
         // sequência elimina essa ambiguidade por completo, ao custo de um app lento atrasar o
         // início dos seguintes.
+        var failedApps = new List<AppItem>();
+
         foreach (var app in profile.Apps)
         {
             if (ct.IsCancellationRequested) return;
             var result = await LaunchAndPositionAsync(app, monitors, ct);
+            if (!result.Success) failedApps.Add(app);
             AppLaunched?.Invoke(result);
+        }
+
+        // Uma segunda chance, no final, para os apps que falharam na primeira passada — geralmente
+        // é lentidão pontual (rede, disco, UAC) e não um problema real com o app.
+        foreach (var app in failedApps)
+        {
+            if (ct.IsCancellationRequested) return;
+            var result = await LaunchAndPositionAsync(app, monitors, ct);
+            AppLaunched?.Invoke(result with { Message = $"{result.Message} (nova tentativa)" });
         }
     }
 
